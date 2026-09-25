@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>PS178 Geo Targeting Demo</title>
+
+    <!-- Leaflet CSS -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <style>
+
+        html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    background: #111827;
+}
+
+#map {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100vh;
+
+    z-index: 1;
+}
+
+       .dashboard {
+    position: absolute;
+
+    z-index: 1000;
+
+    top: 18px;
+    left: 18px;
+
+    width: 320px;
+
+    max-height: calc(100vh - 36px);
+
+    overflow-y: auto;
+
+    box-sizing: border-box;
+
+    background: rgba(255, 255, 255, 0.96);
+
+    padding: 18px;
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.28);
+
+    backdrop-filter: blur(8px);
+}
+.dashboard::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dashboard::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.dashboard::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+/* =========================================
+   CUSTOM USER ICON
+   ========================================= */
+
+.user-marker {
+    width: 34px;
+    height: 34px;
+
+    background: #2563eb;
+
+    border: 3px solid white;
+
+    border-radius: 50%;
+
+    box-shadow:
+        0 3px 10px rgba(0,0,0,0.35);
+
+    position: relative;
+}
+
+
+.user-head {
+
+    position: absolute;
+
+    width: 9px;
+    height: 9px;
+
+    background: white;
+
+    border-radius: 50%;
+
+    top: 6px;
+    left: 10px;
+}
+
+
+.user-body {
+
+    position: absolute;
+
+    width: 17px;
+    height: 9px;
+
+    background: white;
+
+    border-radius: 10px 10px 4px 4px;
+
+    bottom: 6px;
+    left: 6px;
+}
+
+
+/* =========================================
+   CELL TOWER ICON
+   ========================================= */
+
+.tower-marker {
+
+    width: 40px;
+    height: 45px;
+
+    position: relative;
+
+    filter:
+        drop-shadow(
+            0 3px 4px rgba(0,0,0,0.35)
+        );
+}
+
+
+.tower-pole {
+
+    position: absolute;
+
+    width: 4px;
+    height: 32px;
+
+    background: #374151;
+
+    left: 18px;
+    top: 10px;
+}
+
+
+.tower-bar {
+
+    position: absolute;
+
+    height: 3px;
+
+    background: #374151;
+
+    left: 8px;
+}
+
+
+.bar1 {
+
+    width: 24px;
+    top: 14px;
+}
+
+
+.bar2 {
+
+    width: 20px;
+    top: 21px;
+    left: 10px;
+}
+
+
+.bar3 {
+
+    width: 16px;
+    top: 28px;
+    left: 12px;
+}
+
+
+.tower-signal {
+
+    position: absolute;
+
+    border: 3px solid #7c3aed;
+
+    border-left-color: transparent;
+
+    border-bottom-color: transparent;
+
+    border-radius: 50%;
+
+    transform: rotate(-45deg);
+}
+
+
+.signal1 {
+
+    width: 14px;
+    height: 14px;
+
+    top: 0;
+    left: 17px;
+}
+
+
+.signal2 {
+
+    width: 23px;
+    height: 23px;
+
+    top: -5px;
+    left: 13px;
+
+    opacity: 0.55;
+}
+.sensor-card {
+    background: #f3f4f6;
+
+    border-radius: 8px;
+
+    padding: 10px;
+
+    margin-top: 8px;
+
+    font-size: 13px;
+
+    line-height: 1.6;
+
+    border-left: 4px solid #2563eb;
+}
+
+.sensor-card strong {
+    font-size: 15px;
+}
+
+#eventStatus {
+    color: #16a34a;
+}
+.disaster-button {
+    width: 100%;
+
+    padding: 9px;
+
+    margin-top: 6px;
+
+    background: #1f2937;
+
+    color: white;
+
+    border: none;
+
+    border-radius: 7px;
+
+    cursor: pointer;
+
+    font-weight: bold;
+}
+
+.disaster-button:hover {
+    background: #111827;
+}
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- Dashboard panel -->
+
+<div class="dashboard">
+
+    <h1>PS178 Geo Targeting</h1>
+
+    <p>Environmental Sensor Network</p>
+
+    <hr>
+
+    <p>Connected Sensors</p>
+
+    <div
+        class="sensor-count"
+        id="sensorCount"
+    >
+        0
+    </div>
+
+    <p>
+        Backend:
+        <span id="backendStatus">
+            Checking...
+        </span>
+    </p>
+<hr>
+
+<button
+    onclick="simulateFlood()"
+    style="
+        width:100%;
+        padding:12px;
+        background:#dc2626;
+        color:white;
+        border:none;
+        border-radius:8px;
+        cursor:pointer;
+    "
+>
+    SIMULATE FLOOD
+</button>
+<hr>
+<button
+    onclick="startDemo()"
+    style="
+        width:100%;
+        padding:14px;
+        background:#7c3aed;
+        color:white;
+        border:none;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:bold;
+        font-size:16px;
+    "
+>
+    ▶ START DEMO
+</button>
+<p><strong>DISASTER MODE</strong></p>
+
+<button
+    onclick="selectDisaster('flood')"
+    class="disaster-button"
+>
+    🌊 FLOOD
+</button>
+
+<button
+    onclick="selectDisaster('fire')"
+    class="disaster-button"
+>
+    🔥 FOREST FIRE
+</button>
+
+<button
+    onclick="selectDisaster('pollution')"
+    class="disaster-button"
+>
+    ☁️ POLLUTION
+</button>
+
+<button
+    onclick="selectDisaster('landslide')"
+    class="disaster-button"
+>
+    ⛰️ LANDSLIDE
+</button>
+
+<p>
+    Selected:
+    <strong id="selectedDisaster">
+        FLOOD
+    </strong>
+</p>
+<button
+    onclick="resetDemo()"
+    style="
+        width:100%;
+        padding:12px;
+        margin-top:8px;
+        background:#374151;
+        color:white;
+        border:none;
+        border-radius:8px;
+        cursor:pointer;
+    "
+>
+    RESET
+</button>
+
+<p>
+    Flood Risk:
+    <strong id="risk">
+        18%
+    </strong>
+</p>
+<hr>
+
+<p>
+    Event Status:
+    <strong id="eventStatus">
+        NORMAL
+    </strong>
+</p>
+
+<div id="sensorPanel">
+
+    <div class="sensor-card">
+        <strong>H1</strong>
+        <br>
+        Water:
+        <span id="h1Water">42</span> cm
+        <br>
+        Rain:
+        <span id="h1Rain">35</span> mm
+    </div>
+
+    <div class="sensor-card">
+        <strong>H2</strong>
+        <br>
+        Water:
+        <span id="h2Water">48</span> cm
+        <br>
+        Rain:
+        <span id="h2Rain">42</span> mm
+    </div>
+
+    <div class="sensor-card">
+        <strong>H3</strong>
+        <br>
+        Water:
+        <span id="h3Water">37</span> cm
+        <br>
+        Rain:
+        <span id="h3Rain">31</span> mm
+    </div>
+
+    <div class="sensor-card">
+        <strong>H4</strong>
+        <br>
+        Water:
+        <span id="h4Water">22</span> cm
+        <br>
+        Rain:
+        <span id="h4Rain">25</span> mm
+    </div>
+
+</div>
+<hr>
+
+<h3>Targeted Alerts</h3>
+
+<div id="alerts">
+
+    No active alerts.
+
+</div>
+</div>
+
+
+<!-- Map -->
+
+<div id="map"></div>
+
+
+<!-- Leaflet JavaScript -->
+
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+
+<script>
+async function loadTargeting() {
+
+    const response =
+        await fetch(
+            "http://127.0.0.1:8000/targeting"
+        );
+
+    const results =
+        await response.json();
+
+    console.log(
+        "Targeting results:",
+        results
+    );
+
+    results.forEach(result => {
+
+        console.log(
+            result.cell_id,
+            result.overlap,
+            result.status
+        );
+
+    });
+
+}
+
+// --------------------------------------------------
+// 1. CREATE MAP
+// --------------------------------------------------
+const userIcon = L.divIcon({
+
+    className: "custom-user-icon",
+
+    html: `
+        <div class="user-marker">
+            <div class="user-head"></div>
+            <div class="user-body"></div>
+        </div>
+    `,
+
+    iconSize: [36, 36],
+
+    iconAnchor: [18, 36],
+
+    popupAnchor: [0, -36]
+
+});
+
+
+const towerIcon = L.divIcon({
+
+    className: "custom-tower-icon",
+
+    html: `
+        <div class="tower-marker">
+            <div class="tower-pole"></div>
+            <div class="tower-bar bar1"></div>
+            <div class="tower-bar bar2"></div>
+            <div class="tower-bar bar3"></div>
+            <div class="tower-signal signal1"></div>
+            <div class="tower-signal signal2"></div>
+        </div>
+    `,
+
+    iconSize: [40, 45],
+
+    iconAnchor: [20, 45],
+
+    popupAnchor: [0, -45]
+
+});
+const map = L.map("map").setView(
+    [19.0760, 72.8777],
+    13
+);
+
+
+// --------------------------------------------------
+// 2. ADD OPENSTREETMAP MAP
+// --------------------------------------------------
+
+L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+        attribution: "© OpenStreetMap contributors"
+    }
+).addTo(map);
+
+
+// --------------------------------------------------
+// 3. LOAD SENSORS FROM PYTHON BACKEND
+// --------------------------------------------------
+
+async function loadSensors() {
+
+    try {
+
+        const response =
+            await fetch(
+                "http://127.0.0.1:8000/sensors"
+            );
+
+
+        const sensors =
+            await response.json();
+
+
+        console.log("Sensors:", sensors);
+
+
+        // Update sensor count
+
+        document.getElementById(
+            "sensorCount"
+        ).innerText = sensors.length;
+
+
+        // Backend is working
+
+        document.getElementById(
+            "backendStatus"
+        ).innerText = "ONLINE";
+
+
+        // Display every sensor
+
+        sensors.forEach(sensor => {
+
+            const marker =
+                L.marker([
+                    sensor.latitude,
+                    sensor.longitude
+                ]).addTo(map);
+
+
+            marker.bindPopup(`
+
+                <b>${sensor.id}</b>
+
+                <br><br>
+
+                Water Level:
+                ${sensor.water_level} cm
+
+                <br>
+
+                Rainfall:
+                ${sensor.rainfall} mm
+
+                <br>
+
+                Temperature:
+                ${sensor.temperature} °C
+
+            `);
+
+        });
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+
+        document.getElementById(
+            "backendStatus"
+        ).innerText = "OFFLINE";
+
+    }
+
+}
+
+
+// --------------------------------------------------
+// 4. START
+// --------------------------------------------------
+
+loadSensors();
+async function loadCells() {
+
+    const response =
+        await fetch(
+            "http://127.0.0.1:8000/cells"
+        );
+
+
+    const cells =
+        await response.json();
+
+
+    cells.forEach(cell => {
+
+        const polygon =
+            L.polygon(
+                cell.area,
+                {
+                    color: "blue",
+                    fillColor: "blue",
+                    fillOpacity: 0.08,
+                    weight: 2
+                }
+            ).addTo(map);
+
+
+        polygon.bindPopup(`
+            <b>${cell.id}</b>
+
+            <br><br>
+
+            Simulated cellular coverage area
+        `);
+
+
+        L.marker(
+    [
+        cell.tower_latitude,
+        cell.tower_longitude
+    ],
+    {
+        icon: towerIcon
+    }
+)
+.addTo(map)
+.bindPopup(
+    `<b>${cell.id}</b><br>Simulated Cell Tower`
+);
+
+    });
+
+}
+
+
+loadCells();
+async function loadUsers() {
+
+    const response =
+        await fetch(
+            "http://127.0.0.1:8000/users"
+        );
+
+
+    const users =
+        await response.json();
+
+
+    users.forEach(user => {
+
+        const marker =
+    L.marker(
+        [
+            user.latitude,
+            user.longitude
+        ],
+        {
+            icon: userIcon
+        }
+    ).addTo(map);
+
+
+        marker.bindPopup(`
+
+            <b>${user.id}</b>
+
+            <br>
+
+            ${user.name}
+
+        `);
+
+    });
+
+}
+
+
+loadUsers();
+
+let floodLayer = null;
+
+
+async function simulateFlood() {
+    simulateSensorRise();
+
+    const response =
+        await fetch(
+            "http://127.0.0.1:8000/flood"
+        );
+
+
+    const flood =
+        await response.json();
+
+
+    document.getElementById(
+        "risk"
+    ).innerText =
+        flood.risk + "% 🔴";
+
+
+    floodLayer =
+        L.polygon(
+            flood.polygon,
+            {
+                color: "red",
+                fillColor: "red",
+                fillOpacity: 0.40,
+                weight: 3
+            }
+        ).addTo(map);
+
+
+    floodLayer.bindPopup(
+        "<b>Predicted Flood Hazard Zone</b>"
+    );
+    await loadTargeting();
+    await loadAlerts();
+}
+
+
+function resetDemo() {
+
+    if (floodLayer !== null) {
+
+        map.removeLayer(
+            floodLayer
+        );
+
+        floodLayer = null;
+
+    }
+
+
+    document.getElementById(
+        "risk"
+    ).innerText = "18%";
+
+}
+async function loadAlerts() {
+
+    const response =
+        await fetch(
+            "http://127.0.0.1:8000/alerts"
+        );
+
+
+    const alerts =
+        await response.json();
+
+
+    const container =
+        document.getElementById(
+            "alerts"
+        );
+
+
+    container.innerHTML = "";
+
+
+    alerts.forEach(alert => {
+
+        let color = "#16a34a";
+
+
+        if (
+            alert.alert ===
+            "PREPARE"
+        ) {
+
+            color = "#f59e0b";
+
+        }
+
+
+        if (
+            alert.alert ===
+            "EVACUATE"
+        ) {
+
+            color = "#dc2626";
+
+        }
+
+
+        const box =
+            document.createElement(
+                "div"
+            );
+
+
+        box.style.background =
+            color;
+
+        box.style.color =
+            "white";
+
+        box.style.padding =
+            "8px";
+
+        box.style.marginBottom =
+            "6px";
+
+        box.style.borderRadius =
+            "6px";
+
+
+        box.innerHTML = `
+
+            <b>${alert.user_id}</b>
+
+            <br>
+
+            ${alert.cell_id}
+
+            <br>
+
+            ${alert.alert}
+
+        `;
+
+
+        container.appendChild(
+            box
+        );
+
+    });
+
+}
+// --------------------------------------------------
+// SENSOR FLOOD SIMULATION
+// --------------------------------------------------
+
+let sensorSimulationTimer = null;
+
+function simulateSensorRise() {
+
+    clearInterval(sensorSimulationTimer);
+
+    const stages = [
+
+        {
+            status: "RAIN INCREASING...",
+            risk: "35%",
+            h1: [47, 48],
+            h2: [54, 55],
+            h3: [44, 43],
+            h4: [28, 34]
+        },
+
+        {
+            status: "WATER LEVEL RISING...",
+            risk: "58%",
+            h1: [56, 61],
+            h2: [66, 69],
+            h3: [55, 57],
+            h4: [34, 39]
+        },
+
+        {
+            status: "AI DETECTING ANOMALY...",
+            risk: "76%",
+            h1: [64, 72],
+            h2: [75, 78],
+            h3: [63, 65],
+            h4: [38, 41]
+        },
+
+        {
+            status: "FLOOD DETECTED",
+            risk: "91% 🔴",
+            h1: [71, 85],
+            h2: [83, 91],
+            h3: [69, 78],
+            h4: [41, 52]
+        }
+
+    ];
+
+    let stage = 0;
+
+    function updateSensorDisplay() {
+
+        const data = stages[stage];
+
+        document.getElementById(
+            "eventStatus"
+        ).innerText = data.status;
+
+
+        document.getElementById(
+            "risk"
+        ).innerText = data.risk;
+        const statusElement =
+    document.getElementById(
+        "eventStatus"
+    );
+
+
+if (stage < 2) {
+
+    statusElement.style.color =
+        "#d97706";
+
+}
+
+else if (stage < 3) {
+
+    statusElement.style.color =
+        "#ea580c";
+
+}
+
+else {
+
+    statusElement.style.color =
+        "#dc2626";
+
+}
+
+
+        document.getElementById(
+            "h1Water"
+        ).innerText = data.h1[0];
+
+        document.getElementById(
+            "h1Rain"
+        ).innerText = data.h1[1];
+
+
+        document.getElementById(
+            "h2Water"
+        ).innerText = data.h2[0];
+
+        document.getElementById(
+            "h2Rain"
+        ).innerText = data.h2[1];
+
+
+        document.getElementById(
+            "h3Water"
+        ).innerText = data.h3[0];
+
+        document.getElementById(
+            "h3Rain"
+        ).innerText = data.h3[1];
+
+
+        document.getElementById(
+            "h4Water"
+        ).innerText = data.h4[0];
+
+        document.getElementById(
+            "h4Rain"
+        ).innerText = data.h4[1];
+
+
+        stage++;
+
+        if (stage >= stages.length) {
+
+            clearInterval(
+                sensorSimulationTimer
+            );
+
+        }
+
+    }
+
+
+    updateSensorDisplay();
+
+
+    sensorSimulationTimer =
+        setInterval(
+            updateSensorDisplay,
+            2500
+        );
+
+}
+// --------------------------------------------------
+// DISASTER MODE
+// --------------------------------------------------
+
+let selectedDisaster = "flood";
+
+
+function selectDisaster(type) {
+
+    selectedDisaster = type;
+
+
+    const names = {
+
+        flood: "FLOOD",
+
+        fire: "FOREST FIRE",
+
+        pollution: "POLLUTION EVENT",
+
+        landslide: "LANDSLIDE"
+
+    };
+
+
+    document.getElementById(
+        "selectedDisaster"
+    ).innerText =
+        names[type];
+
+}
+function getDisasterData(type) {
+
+    if (type === "flood") {
+
+        return {
+
+            status: "FLOOD DETECTED",
+
+            risk: "91% 🔴",
+
+            h1: "Water 71 cm | Rain 85 mm",
+
+            h2: "Water 83 cm | Rain 91 mm",
+
+            h3: "Water 69 cm | Rain 78 mm",
+
+            h4: "Water 41 cm | Rain 52 mm"
+
+        };
+
+    }
+
+
+    if (type === "fire") {
+
+        return {
+
+            status: "FOREST FIRE DETECTED",
+
+            risk: "88% 🔴",
+
+            h1: "Temp 42°C | PM2.5 185",
+
+            h2: "Temp 45°C | PM2.5 240",
+
+            h3: "Temp 41°C | PM2.5 165",
+
+            h4: "Temp 34°C | PM2.5 72"
+
+        };
+
+    }
+
+
+    if (type === "pollution") {
+
+        return {
+
+            status: "POLLUTION EVENT",
+
+            risk: "84% 🔴",
+
+            h1: "PM2.5 210 | Gas HIGH",
+
+            h2: "PM2.5 285 | Gas HIGH",
+
+            h3: "PM2.5 190 | Gas MED",
+
+            h4: "PM2.5 65 | Gas LOW"
+
+        };
+
+    }
+
+
+    if (type === "landslide") {
+
+        return {
+
+            status: "LANDSLIDE RISK",
+
+            risk: "79% 🔴",
+
+            h1: "Soil 91% | Tilt 4.2°",
+
+            h2: "Soil 95% | Tilt 5.8°",
+
+            h3: "Soil 82% | Tilt 2.7°",
+
+            h4: "Soil 61% | Tilt 0.8°"
+
+        };
+
+    }
+
+}
+async function runDisasterSimulation() {
+
+    if (selectedDisaster === "flood") {
+
+        await simulateFlood();
+
+        return;
+
+    }
+
+
+    const data =
+        getDisasterData(
+            selectedDisaster
+        );
+
+
+    document.getElementById(
+        "eventStatus"
+    ).innerText =
+        data.status;
+
+
+    document.getElementById(
+        "risk"
+    ).innerText =
+        data.risk;
+
+
+    console.log(
+        "Simulated disaster:",
+        data
+    );
+
+}
+// --------------------------------------------------
+// AUTOMATIC DEMO MODE
+// --------------------------------------------------
+
+let demoRunning = false;
+
+function wait(ms) {
+
+    return new Promise(
+        resolve =>
+            setTimeout(
+                resolve,
+                ms
+            )
+    );
+
+}
+
+async function startDemo() {
+
+    if (demoRunning) {
+        return;
+    }
+
+    demoRunning = true;
+
+    // STEP 1
+    document.getElementById(
+        "eventStatus"
+    ).innerText =
+        "SYSTEM NORMAL";
+
+    document.getElementById(
+        "risk"
+    ).innerText =
+        "18%";
+
+    await wait(3000);
+
+
+    // STEP 2
+    document.getElementById(
+        "eventStatus"
+    ).innerText =
+        "RAINFALL INCREASING...";
+
+    document.getElementById(
+        "risk"
+    ).innerText =
+        "35%";
+
+    await wait(3000);
+
+
+    // STEP 3
+    document.getElementById(
+        "eventStatus"
+    ).innerText =
+        "WATER LEVEL RISING...";
+
+    document.getElementById(
+        "risk"
+    ).innerText =
+        "58%";
+
+    await wait(3000);
+
+
+    // STEP 4
+    document.getElementById(
+        "eventStatus"
+    ).innerText =
+        "AI DETECTING ANOMALY...";
+
+    document.getElementById(
+        "risk"
+    ).innerText =
+        "76%";
+
+    await wait(3000);
+
+
+    // STEP 5
+    document.getElementById(
+        "eventStatus"
+    ).innerText =
+        "FLOOD HAZARD PREDICTED";
+
+    document.getElementById(
+        "risk"
+    ).innerText =
+        "91% 🔴";
+
+    await wait(1500);
+
+
+    // STEP 6
+    await simulateFlood();
+
+
+    demoRunning = false;
+
+}
+</script>
+
+
+</body>
+
+</html>
